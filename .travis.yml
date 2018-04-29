@@ -11,7 +11,15 @@ dist: trusty
 
 language: cpp
 
-
+deploy:
+  provider: bintray
+  file: "$TRAVIS_BUILD_DIR/.bintray.js"
+  user: thecrazyt
+  key:
+    secure: cbVJmqDLooWLr6IhAztQPGpZtG1lZTjc50japHT5hlDF7857IgI5WRX6HIQ9iBicc2BbVveKW+4deEhze0TrzrX6kRRSEZqIvSMaWvqrB0iRHqMOyMk47nty/tJ9gxObUc3ONIed4BDch69kXz6dpgNSKxczmnb/Sl976/sP+tmZthKXfco4DVxaGmsDt58EVRXmi+vXMWOnQjaGgocqGaQ87joa3nVGSFwtm35/ZiTDga0GjxM3t+IZFTTlnZENrsiOP2Lurqv3vtKvxGzGIspd8mQiEgrEBXprneIlQw0eiGqbjOPGr2WF55MOcJvDqEOSDjiPUVpFB1XyCGcMBnTIg7KxiYo2mko3Wq6lBapNEc/71MyNIr145NpKrata/RE6c4I8m2/d1x9HyP412CQ2aLqX3RbKUyFuoA7NyyRzQbHk7vS4PK3JjCx+e5M2uhmQTydsyq10OFeO8i/qkOR9m0F737MHuynRCwfMYtlVUOVBEkXfgUVacZNUdfLf/zCd/lszwfxX50jzwJKyktasMK7CWfiTL0usVMv9J0m60NaKzjiBuXRc+mr/kHiBKorEyHh4sK3SS2cWhESYITtKS//WpWn5CcK3Hb3ooLkc5PFCeXLGoRhBq+Lh0olsQLybVIDz+iaEvW+NqeQl3H4ap9kHR9zSJpKRIeAGfm0=
+  on:
+    all_branches: true
+    
 matrix:
   include:
     - compiler: x86_64-w64-mingw32-gcc
@@ -28,6 +36,7 @@ addons:
     - clang
     - python-numpy
     - python-sphinx
+    - python3
     - python3-dev
     - python3-numpy
     - libboost-all-dev
@@ -39,26 +48,32 @@ addons:
 cache:
   directories:
   - $HOME/Boost
-  - $HOME/boost_python
+  #- $HOME/boost_python
 
 before_install:
   # The Trusty image has several Python versions pre-installed compiled with
   # conflicting UCS2 and UCS4 unicode. Modify the PATH to skip the TravisCI python.
   # See https://github.com/travis-ci/travis-ci/issues/4948 for details.
   - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
+  - sudo sed 's/\(.include *.ansidecl.h.\)/\/\/\1/g' -i /usr/share/mingw-w64/include/ieeefp.h
 
 install:
   - ls -la
   - pwd
   - echo HOME $HOME
-  - |
-     if [ ! -d $(pwd)/boost_python ]; then
-       wget -O boost_python.tar.gz https://github.com/boostorg/python/archive/boost-1.66.0.tar.gz
-       tar xf boost_python.tar.gz
-       mv python-boost-1.66.0 boost_python
-       echo created $(pwd)/boost_python
-     fi
-  - ls boost_python/
+  #- |
+  #   if [ ! -d $(pwd)/boost_python ]; then
+  #     wget -O boost_python.tar.gz https://github.com/boostorg/python/archive/boost-1.66.0.tar.gz
+  #     tar xf boost_python.tar.gz
+  #     mv python-boost-1.66.0 boost_python
+  #     echo created $(pwd)/boost_python
+  #   fi
+  - wget http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-python3-3.6.5-1-any.pkg.tar.xz
+  - tar xf mingw-w64-x86_64-python3-3.6.5-1-any.pkg.tar.xz
+  #- wget https://bootstrap.pypa.io/get-pip.py
+  #- /usr/bin/python3 get-pip.py
+  #- /usr/bin/python3 -m pip install numpy
+  #- ls boost_python/
   # Install our own version of Boost (the subset we need) as the system version is
   # too old (for C++11 support).
   - rm -rf $HOME/Boost
@@ -80,14 +95,24 @@ install:
        export PATH=$(pwd)/mingw:$PATH
        ln -s /usr/bin/x86_64-w64-mingw32-gcc mingw/gcc
        ln -s /usr/bin/x86_64-w64-mingw32-g++ mingw/g++
-       ls -la mingw/
-       ./b2 toolset=gcc  link=shared libs/python/build/
+       echo 'using gcc : 7.2 : x86_64-w64-mingw32-g++ ;' > ~/user-config.jam
+       ls -la ../mingw64/include/python3.6m
+       #echo 'using python : 3.6m : /usr/bin/python3.6 : '$(pwd)'/../mingw64/include/python3.6m : '$(pwd)'/../mingw64/lib : <target-os>windows ;' >> ~/user-config.jam
+       echo 'using python : 3.6m : /bin/false : '$(pwd)'/../mingw64/include/python3.6m : '$(pwd)'/../mingw64/lib : <target-os>windows ;' >> ~/user-config.jam
+       #echo 'using python : 3.6m : /usr/bin/python3 : '$(pwd)'/../mingw64/include/python3.6m : '$(pwd)'/../mingw64/lib : <target-os>windows ;' >> ~/user-config.jam
+       ln -s $(pwd)/../mingw64/lib/libpython3.6.dll.a $(pwd)/../mingw64/lib/libpython36.dll.a
+       #user-config.jam in home directory
+       #python.jam remove "lib dl" and "lib util"
+       #--user-config user-config.jam
+       #./b2 toolset=gcc  link=shared target-os=windows address-model=64 architecture=x86 --with-python veriant=release cxxflags='cxxflags='-I"'$(pwd)'/../mingw64/include/python3.6m/" -DHAVE_SSIZE_T -DPY_FORMAT_SIZE_T="l" -DPY_FORMAT_LONG_LONG="ll"'
+       ./b2 toolset=gcc  link=shared target-os=windows address-model=64 architecture=x86 --debug-configuration --with-python variant=release
        popd
      fi
 
 script:
-- cd boost_python
-- ls stage/libs
+- pushd boost_1_66_0
+- ls stage/lib
+- popd
 
 after_failure:
 - cat $HOME/build/TheCrazyT/boost_python_build_win/boost_1_66_0/bootstrap.log
