@@ -14,7 +14,7 @@
     "files":
         [
             {
-                "includePattern": "/home/travis/build/TheCrazyT/boost_python_build_win/boost_1_66_0/stage/lib/(*.dll)", "uploadPattern": "$1",
+                "includePattern": "/home/travis/build/TheCrazyT/boost_python_build_win/build/(.*)", "uploadPattern": "$1",
                 "matrixParams": {
                     "override": 1 
                 }
