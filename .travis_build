@@ -1,0 +1,147 @@
+#!/bin/bash -x
+apt-get -qq update
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y wget
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y gcc-mingw-w64-x86-64
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y g++-mingw-w64-x86-64
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y p7zip
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y scons
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y clang
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y python3
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y python3-dev
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y python3-numpy
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+apt-get install -y libboost-all-dev
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
+sudo sed 's/\(.include *.ansidecl.h.\)/\/\/\1/g' -i /usr/share/mingw-w64/include/ieeefp.h
+ls -la
+pwd
+echo HOME $HOME
+
+wget http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-python3-3.6.5-1-any.pkg.tar.xz
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+wget https://github.com/TheCrazyT/roboschool/releases/download/v0.0.1-beta.1/precompiled_headers.7z
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+7zr x precompiled_headers.7z 1>/dev/null 2>/dev/null
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+tar xf mingw-w64-x86_64-python3-3.6.5-1-any.pkg.tar.xz
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
+rm -rf $HOME/Boost
+
+if [ ! -d $HOME/Boost ]; then
+    echo "rebuilding Boost prerequisites"
+    wget https://sourceforge.net/projects/boost/files/boost/1.66.0/boost_1_66_0.tar.gz/download
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    tar xf download
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    pushd boost_1_66_0
+    export BOOST_JAM_TOOLSET_ROOT=/usr/x86_64-w64-mingw32
+    ./bootstrap.sh -with-toolset=gcc -with-python-version=3.6
+    if [ $? != 0 ]
+    then
+        cat bootstrap.log
+        exit 1
+    fi
+
+    echo 'using gcc : 7.2 : x86_64-w64-mingw32-g++ ;' > ~/user-config.jam
+    echo 'using python : 3.6 : /bin/false : '$(pwd)'/../mingw64/include/python3.6m : '$(pwd)'/../precompiled/ : <target-os>windows ;' >> ~/user-config.jam
+    
+    echo output of x86_64-w64-mingw32-g++ --version:
+    x86_64-w64-mingw32-g++ --version
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    ./b2 -d2 toolset=gcc  link=shared target-os=windows address-model=64 architecture=x86 --debug-configuration --with-python variant=release  cflags='-static-libgcc -static-libstdc++' cxxflags='-static-libgcc -static-libstdc++' linkflags='-static-libgcc -static-libstdc++'
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    popd
+fi
+pushd boost_1_66_0
+    pwd
+    ls stage/lib
+    mkdir ../build/
+    #- python -c "import sys;content=open('stage/lib/libboost_python3.dll','rb').read();content=content.replace(b'libpython3.6.dll',bytes('Python36.dll\0\0\0\0'));open('stage/lib/libboost_python3-mgw72-mt-x64-1_66.dll','wb').write(content)"
+    cp stage/lib/* ../build/
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+popd
