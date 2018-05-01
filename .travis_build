@@ -127,7 +127,7 @@ if [ ! -d $HOME/Boost ]; then
     then
         exit 1
     fi
-    ./b2 -d2 toolset=gcc  link=shared target-os=windows address-model=64 architecture=x86 --debug-configuration --with-python variant=release  cflags='-static-libgcc -static-libstdc++' cxxflags='-static-libgcc -static-libstdc++' linkflags='-static-libgcc -static-libstdc++'
+    ./b2 -d2 toolset=gcc  link=shared target-os=windows address-model=64 architecture=x86 --debug-configuration --with-python variant=release
     if [ $? != 0 ]
     then
         exit 1
