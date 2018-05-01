@@ -1,0 +1,20 @@
+--- libs/python/src/object/class.cpp	2017-12-13 23:56:46.000000000 +0100
++++ libs/python/src/object/class.cpp	2018-05-01 11:42:06.482348600 +0200
+@@ -616,6 +616,8 @@
+   void class_base::add_property(
+     char const* name, object const& fget, char const* docstr)
+   {
++      __asm__(".intel_syntax;mov qword ptr[%rsp+0x20],0;.att_syntax;");
++
+       object property(
+           (python::detail::new_reference)
+           PyObject_CallFunction((PyObject*)&PyProperty_Type, const_cast<char*>("Osss"), fget.ptr(), 0, 0, docstr));
+@@ -626,6 +628,8 @@
+   void class_base::add_property(
+     char const* name, object const& fget, object const& fset, char const* docstr)
+   {
++      __asm__(".intel_syntax;mov qword ptr[%rsp+0x20],0;.att_syntax;");
++
+       object property(
+           (python::detail::new_reference)
+           PyObject_CallFunction((PyObject*)&PyProperty_Type, const_cast<char*>("OOss"), fget.ptr(), fset.ptr(), 0, docstr));

@@ -65,8 +65,14 @@ then
 	exit 1
 fi
 
+apt-get install -y patch
+if [ $? != 0 ]
+then
+	exit 1
+fi
+
 export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
-sudo sed 's/\(.include *.ansidecl.h.\)/\/\/\1/g' -i /usr/share/mingw-w64/include/ieeefp.h
+sed 's/\(.include *.ansidecl.h.\)/\/\/\1/g' -i /usr/share/mingw-w64/include/ieeefp.h
 ls -la
 pwd
 echo HOME $HOME
@@ -127,6 +133,14 @@ if [ ! -d $HOME/Boost ]; then
     then
         exit 1
     fi
+    
+    #fixing an annoying bug (maybe mingw,maybe boost, idk.) see: https://github.com/TheCrazyT/boost_python_build_win/issues/1
+    patch -p0 -f < ../add_property.patch
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+
     ./b2 -d2 toolset=gcc  link=shared target-os=windows address-model=64 architecture=x86 --debug-configuration --with-python variant=release
     if [ $? != 0 ]
     then
